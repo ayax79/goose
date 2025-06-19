@@ -22,6 +22,7 @@ enum ExtensionConfigRequest {
         name: String,
         /// The URI endpoint for the SSE extension.
         uri: String,
+        api_token: Option<String>,
         #[serde(default)]
         /// Map of environment variable key to values.
         envs: Envs,
@@ -164,12 +165,14 @@ async fn add_extension(
         ExtensionConfigRequest::Sse {
             name,
             uri,
+             api_token,
             envs,
             env_keys,
             timeout,
         } => ExtensionConfig::Sse {
             name,
             uri,
+             api_token,
             envs,
             env_keys,
             description: None,

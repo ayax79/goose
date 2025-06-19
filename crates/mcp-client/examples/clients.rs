@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let handle2 = transport2.start().await?;
     let client2 = McpClient::connect(handle2, Duration::from_secs(30)).await?;
 
-    let transport3 = SseTransport::new("http://localhost:8000/sse", HashMap::new());
+    let transport3 = SseTransport::new("http://localhost:8000/sse", None, HashMap::new());
     let handle3 = transport3.start().await?;
     let client3 = McpClient::connect(handle3, Duration::from_secs(10)).await?;
 

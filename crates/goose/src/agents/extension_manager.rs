@@ -180,10 +180,11 @@ impl ExtensionManager {
                 envs,
                 env_keys,
                 timeout,
+                api_token,
                 ..
             } => {
                 let all_envs = merge_environments(envs, env_keys, &sanitized_name).await?;
-                let transport = SseTransport::new(uri, all_envs);
+                let transport = SseTransport::new(uri, api_token.clone(), all_envs);
                 let handle = transport.start().await?;
                 Box::new(
                     McpClient::connect(

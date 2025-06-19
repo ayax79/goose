@@ -211,6 +211,7 @@ impl Session {
         let config = ExtensionConfig::Sse {
             name,
             uri: extension_url,
+            api_token: None,
             envs: Envs::new(HashMap::new()),
             env_keys: Vec::new(),
             description: Some(goose::config::DEFAULT_EXTENSION_DESCRIPTION.to_string()),

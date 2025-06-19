@@ -17,7 +17,7 @@ async fn main() -> Result<()> {
         .init();
 
     // Create the base transport
-    let transport = SseTransport::new("http://localhost:8000/sse", HashMap::new());
+    let transport = SseTransport::new("http://localhost:8000/sse", None, HashMap::new());
 
     // Start transport
     let handle = transport.start().await?;

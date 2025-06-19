@@ -128,6 +128,7 @@ pub enum ExtensionConfig {
         /// The name used to identify this extension
         name: String,
         uri: String,
+        api_token: Option<String>,
         #[serde(default)]
         envs: Envs,
         #[serde(default)]
@@ -195,10 +196,11 @@ impl Default for ExtensionConfig {
 }
 
 impl ExtensionConfig {
-    pub fn sse<S: Into<String>, T: Into<u64>>(name: S, uri: S, description: S, timeout: T) -> Self {
+    pub fn sse<S: Into<String>, T: Into<u64>>(name: S, uri: S, api_token: Option<String>, description: S, timeout: T) -> Self {
         Self::Sse {
             name: name.into(),
             uri: uri.into(),
+            api_token,
             envs: Envs::default(),
             env_keys: Vec::new(),
             description: Some(description.into()),

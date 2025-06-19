@@ -753,6 +753,9 @@ pub fn configure_extensions_dialog() -> Result<(), Box<dyn Error>> {
                 config: ExtensionConfig::Sse {
                     name: name.clone(),
                     uri,
+                    api_token: None, // todo: Would need to determine the least confusing way to
+                                     // expose this since many servers specify the token as an
+                                     // environment variable
                     envs: Envs::new(envs),
                     env_keys,
                     description,

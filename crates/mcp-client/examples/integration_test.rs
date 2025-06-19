@@ -37,6 +37,7 @@ async fn sse_transport() -> Result<SseTransport> {
 
     Ok(SseTransport::new(
         format!("http://localhost:{}/sse", port),
+        None,
         HashMap::new(),
     ))
 }

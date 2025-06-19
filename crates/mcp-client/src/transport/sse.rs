@@ -26,6 +26,8 @@ pub struct SseActor {
     sender: mpsc::Sender<JsonRpcMessage>,
     /// Base SSE URL
     sse_url: String,
+    /// Optional API token for authentication (if required by the SSE server)
+    api_token: Option<String>,
     /// For sending HTTP POST requests
     http_client: HttpClient,
     /// The discovered endpoint for POST requests (once "endpoint" SSE event arrives)
@@ -37,12 +39,14 @@ impl SseActor {
         receiver: mpsc::Receiver<String>,
         sender: mpsc::Sender<JsonRpcMessage>,
         sse_url: String,
+        api_token: Option<String>,
         post_endpoint: Arc<RwLock<Option<String>>>,
     ) -> Self {
         Self {
             receiver,
             sender,
             sse_url,
+            api_token,
             post_endpoint,
             http_client: HttpClient::new(),
         }
@@ -56,6 +60,7 @@ impl SseActor {
             Self::handle_incoming_messages(
                 self.sender,
                 self.sse_url.clone(),
+                self.api_token.clone(),
                 Arc::clone(&self.post_endpoint)
             ),
             Self::handle_outgoing_messages(
@@ -73,15 +78,24 @@ impl SseActor {
     async fn handle_incoming_messages(
         sender: mpsc::Sender<JsonRpcMessage>,
         sse_url: String,
+        api_token: Option<String>,
         post_endpoint: Arc<RwLock<Option<String>>>,
     ) {
-        let client = match eventsource_client::ClientBuilder::for_url(&sse_url) {
-            Ok(builder) => builder.build(),
-            Err(e) => {
-                warn!("Failed to connect SSE client: {}", e);
-                return;
-            }
-        };
+        let client =
+            match eventsource_client::ClientBuilder::for_url(&sse_url).and_then(|builder| {
+                if let Some(token) = &api_token {
+                    let bearer_token = format!("Bearer {}", token);
+                    builder.header("Authorization", &bearer_token)
+                } else {
+                    Ok(builder)
+                }
+            }) {
+                Ok(builder) => builder.build(),
+                Err(e) => {
+                    warn!("Failed to connect SSE client: {}", e);
+                    return;
+                }
+            };
         let mut stream = client.stream();
 
         // First, wait for the "endpoint" event
@@ -202,14 +216,20 @@ impl TransportHandle for SseTransportHandle {
 #[derive(Clone)]
 pub struct SseTransport {
     sse_url: String,
+    api_token: Option<String>,
     env: HashMap<String, String>,
 }
 
 /// The SSE transport spawns an `SseActor` on `start()`.
 impl SseTransport {
-    pub fn new<S: Into<String>>(sse_url: S, env: HashMap<String, String>) -> Self {
+    pub fn new<S: Into<String>>(
+        sse_url: S,
+        api_token: Option<String>,
+        env: HashMap<String, String>,
+    ) -> Self {
         Self {
             sse_url: sse_url.into(),
+            api_token,
             env,
         }
     }
@@ -252,7 +272,13 @@ impl Transport for SseTransport {
         let post_endpoint_clone = Arc::clone(&post_endpoint);
 
         // Build the actor
-        let actor = SseActor::new(rx, otx, self.sse_url.clone(), post_endpoint);
+        let actor = SseActor::new(
+            rx,
+            otx,
+            self.sse_url.clone(),
+            self.api_token.clone(),
+            post_endpoint,
+        );
 
         // Spawn the actor task
         tokio::spawn(actor.run());
